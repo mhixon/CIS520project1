@@ -6,9 +6,9 @@ CIS 520 - Programming Project #1
 
 >> Fill in the names and email addresses of your group members.
 
-FirstName LastName <email@k-state.edu>
-FirstName LastName <email@k-state.edu>
-...
+Matt Hixon mhixon@k-state.edu
+Christian Hughes cjhughes255@k-state.edu
+Katie Kristiansen kkristia@ksu.edu
 
 ---- PRELIMINARIES ----
 
