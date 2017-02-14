@@ -1,7 +1,7 @@
 
 CIS 520 - Programming Project #1
 
-                   
+
 ---- GROUP ----
 
 >> Fill in the names and email addresses of your group members.
@@ -28,6 +28,23 @@ Katie Kristiansen kkristia@ksu.edu
 >> A1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
+
+/* thread.h */
+struct semaphore sema;
+int64_t sleep_duration;
+
+/* thread.c */
+
+/* timer.c */
+static struct list sleeping_threads;
+list_init(&sleeping_threads);
+thread_current()->sema = (semaphore*)malloc(sizeof(semaphore));
+thread_current()->sleep_duration = start + ticks;
+sema_init(thread_current()->sema, 0);
+list_insert_ordered(sleeping_threads, thread_current()->elem, thread_sleep_compare, NULL);
+sema_down(thread_current()->sema);
+struct thread front_thread
+
 
 
 ---- ALGORITHMS ----
@@ -134,4 +151,3 @@ ticks   A   B   C   A   B   C   to run
 >> disadvantages in your design choices.  If you were to have extra
 >> time to work on this part of the project, how might you choose to
 >> refine or improve your design?
-
