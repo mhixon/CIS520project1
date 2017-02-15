@@ -19,7 +19,7 @@ Katie Kristiansen <kkristia@ksu.edu>
 >> preparing your submission, other than the Pintos documentation,
 >> course text, lecture notes, and course staff.
 
-https://github.com/Hindol/pintos - Inspiration for portions of list sorting function and interupt handler.
+https://github.com/Hindol/pintos - Inspiration for portions of list sorting function and interrupt handler.
 
 
                  ALARM CLOCK
@@ -40,6 +40,7 @@ ADDED TO struct thread:
 /* timer.c */
 GLOBAL VARIABLE:
   static struct list sleeping_threads; - An ordered list to keep track of threads that are asleep.
+  static struct lock sleeping_threads_list_lock; - Provides a locking mechanism for the sleeping_threads list.
 
 
 ---- ALGORITHMS ----
@@ -47,12 +48,12 @@ GLOBAL VARIABLE:
 >> A2: Briefly describe what happens in a call to your timer_sleep(),
 >> including the effects of the timer interrupt handler.
 
-We begin by assigning each thread a sleep duration time, and a semaphore initalized to 0. We then add that thread to a list of sleeping threads, and decrament the its semaphore (which puts the thread to sleep). The interupt handler checks the list of sleeping threads to see if any threads are qualified to wake up (and wakes up all qualifying threads).
+We begin by assigning each thread a sleep duration time, and a semaphore initialized to 0. We then add that thread to a list of sleeping threads, and decrement the its semaphore (which puts the thread to sleep). The interrupt handler checks the list of sleeping threads to see if any threads are qualified to wake up (and wakes up all qualifying threads).
 
 >> A3: What steps are taken to minimize the amount of time spent in
 >> the timer interrupt handler?
 
-The list of sleeping threads is kept sorted. The interupt handler will always begin checking the threads at the beginning of the list, which are those with the shortest sleep duration. If a thread is found that is not ready to wake up, the rest of threads are not checked (sleep duration increases throughout the list).
+The list of sleeping threads is kept sorted. The interrupt handler will always begin checking the threads at the beginning of the list, which are those with the shortest sleep duration. If a thread is found that is not ready to wake up, the rest of threads are not checked (sleep duration increases throughout the list).
 
 
 ---- SYNCHRONIZATION ----
@@ -60,15 +61,21 @@ The list of sleeping threads is kept sorted. The interupt handler will always be
 >> A4: How are race conditions avoided when multiple threads call
 >> timer_sleep() simultaneously?
 
+The only operation in timer_sleep() capable of generating a race condition is the call to list_insert_ordered(). We put a lock around this function to ensure that only one thread is modifying the list at a time.
+
 
 >> A5: How are race conditions avoided when a timer interrupt occurs
 >> during a call to timer_sleep()?
+
+The only area that a race condition could occur is in between adding a thread to the sleeping_threads list, and decrementing that threads semaphore. Because each thread is added to the list with its sleep_duration time, the timer_interrupt will only remove that thread from the list if is appropriately ready to wake-up (and its semaphore will correctly be restored to a value of 0). Race conditions are therefore eliminated. There is also a lock in timer_interrupt() that ensures only one thread pops from the list at a time.
 
 
 ---- RATIONALE ----
 
 >> A6: Why did you choose this design?  In what ways is it superior to
 >> other designs that you considered?
+
+We didn't want to create a design that required constantly disabling interrupts -- we wanted to maintain preemption to the greatest extent possible. Our use of per-thread semaphores cleanly manages putting threads to sleep and waking them back up. We also maintain a sorted list to maximize the efficiency of the interrupt handler when determining which (if any) threads to wake-up. We used as many built in data-structures as possible to manage synchronization and thread state.
 
 
 

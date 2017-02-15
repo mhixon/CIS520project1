@@ -21,8 +21,11 @@
 static int64_t ticks;
 
 /* A list of sleeping threads,
-   used by timer_sleep to handle the intervals between wake-ups */
+   used by timer_sleep to handle the intervals between wake-ups. */
 static struct list sleeping_threads;
+
+/* A lock dedicated to managing sleeping_threads list access. */
+static struct lock sleeping_threads_list_lock;
 
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
@@ -41,6 +44,9 @@ timer_init (void)
 {
   /* Initilize a list of sleeping threads to an empty list. */
   list_init(&sleeping_threads); 
+  
+  /* Intialize the lock dedicated to managing sleeping_threads list access. */
+  lock_init(&sleeping_threads_list_lock);
   
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
@@ -106,8 +112,12 @@ timer_sleep (int64_t ticks)
   /* Initialize the semaphore to 0. */
   sema_init(&(thread_current()->sema), 0);
   
+  lock_acquire(&sleeping_threads_list_lock);
+  
   /* Add thread to be put to sleep to the list. Keeps the list in order. */
   list_insert_ordered(&sleeping_threads, &(thread_current()->timer_sleep_elem), thread_sleep_compare, NULL);
+  
+  lock_release(&sleeping_threads_list_lock);
   
   /* Put the thread to sleep by decrementing the semaphore. 
      It will be woken up in the interupt handler. */
@@ -203,8 +213,18 @@ timer_interrupt (struct intr_frame *args UNUSED)
        Else no threads are ready. */
     if (front_thread->sleep_duration < ticks)
     {
-      sema_up(&(front_thread->sema));
-      list_pop_front(&sleeping_threads);
+      /* Try to acquire the lock to pop from the list. 
+         If we can't, break out and try on next interupt. */
+      if (lock_try_acquire(&sleeping_threads_list_lock))
+      {
+        sema_up(&(front_thread->sema));
+        list_pop_front(&sleeping_threads);
+        lock_release(&sleeping_threads_list_lock);
+      }
+      else
+      {
+        break;
+      }
     }
     else
     {
