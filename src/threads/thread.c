@@ -586,15 +586,10 @@ allocate_tid (void)
 bool
 thread_sleep_compare (const struct list_elem *left, const struct list_elem *right, void *aux UNUSED)
 {
-  struct thread *left_thread = list_entry(left, struct thread, elem);
-  struct thread *right_thread = list_entry(right, struct thread, elem);
+  struct thread *left_thread = list_entry(left, struct thread, timer_sleep_elem);
+  struct thread *right_thread = list_entry(right, struct thread, timer_sleep_elem);
 
-  if (left_thread->sleep_duration < right_thread->sleep_duration)
-  {
-    return true;
-  }
-  return false;
-
+  return (left_thread->sleep_duration < right_thread->sleep_duration);
 }
 
 /* Offset of `stack' member within `struct thread'.

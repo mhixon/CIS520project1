@@ -39,7 +39,6 @@ static void real_time_delay (int64_t num, int32_t denom);
 void
 timer_init (void)
 {
-  // printf("The list is about ready!");
   list_init(&sleeping_threads); /* Initilize a list of sleeping threads to an empty list. */
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
@@ -99,38 +98,17 @@ timer_sleep (int64_t ticks)
 
   ASSERT (intr_get_level () == INTR_ON);
 
-  // Malloc a new semaphore object for the thread.
-  // thread_current()->sema = (struct semaphore*)malloc(sizeof(struct semaphore));
-
   // Add the wake-up time to the thread.
   thread_current()->sleep_duration = start + ticks;
 
   // Initialize the semaphore to 0.
   sema_init(&(thread_current()->sema), 0);
-  // if (list_size(&sleeping_threads) == 0)
-  // {
-  printf("Adding to the list!");
-
-    list_push_back(&sleeping_threads, &(thread_current()->elem));
-    printf("%d", list_size(&sleeping_threads));
-  // }
-  // else
-  // {
-  //   printf("ORDER");
-  //   // Add thread to be put to sleep to the list. Keeps the list in order.
-  //   list_insert_ordered(&sleeping_threads, &(thread_current()->elem), thread_sleep_compare, NULL);
-  // }
-
-  // Put the thread to sleep by decrementing the semaphore.
+  
+  // Add thread to be put to sleep to the list. Keeps the list in order.
+  list_insert_ordered(&sleeping_threads, &(thread_current()->timer_sleep_elem), thread_sleep_compare, NULL);
+  
+  // Put the thread to sleep by decrementing the semaphore. It will be woken up in the interupt handler.
   sema_down(&(thread_current()->sema));
-  printf("The thread woke up!");
-  // Create another function elsewhere to check to see if the front of the list is ready to run.
-  // Run that function within the clock-tick function (built in).
-  // Remove that item from the list.
-
-
-  // while (timer_elapsed (start) < ticks)
-  //   thread_yield ();
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -209,17 +187,23 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
-  if (!list_empty(&sleeping_threads))
+  /* If list is non-empty, check to see if threads are ready to be woken up. */
+  while (!list_empty(&sleeping_threads))
   {
-//    printf("%dInterupt Handler", list_size(&sleeping_threads));
-    struct thread *front_thread = list_entry(list_front(&sleeping_threads), struct thread, elem);
-//    if (front_thread->sleep_duration < timer_ticks())
-//    {
-      
-      sema_up((&front_thread->sema));
-//      printf("The semaphore was decramented");
-      list_pop_front(&sleeping_threads);
-//    }
+    /* Grab the thread in the front of the list. Will have lowest sleep duration. */
+    struct thread *front_thread = list_entry(list_front(&sleeping_threads), struct thread, timer_sleep_elem);
+    
+    /* When thread is ready to be woken up, wake it up and remove it from the list. */
+    if (front_thread->sleep_duration < ticks)
+    {
+      sema_up(&(front_thread->sema));
+      list_remove(list_front(&sleeping_threads));
+    }
+    /* Else, no more threads are ready to be woken up (beacuse list is ordered). */
+    else
+    {
+      break;
+    }
   }
 
 }
