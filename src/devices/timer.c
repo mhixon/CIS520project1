@@ -39,7 +39,9 @@ static void real_time_delay (int64_t num, int32_t denom);
 void
 timer_init (void)
 {
-  list_init(&sleeping_threads); /* Initilize a list of sleeping threads to an empty list. */
+  /* Initilize a list of sleeping threads to an empty list. */
+  list_init(&sleeping_threads); 
+  
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
 }
@@ -98,16 +100,17 @@ timer_sleep (int64_t ticks)
 
   ASSERT (intr_get_level () == INTR_ON);
 
-  // Add the wake-up time to the thread.
+  /* Add the wake-up time to the thread. */
   thread_current()->sleep_duration = start + ticks;
 
-  // Initialize the semaphore to 0.
+  /* Initialize the semaphore to 0. */
   sema_init(&(thread_current()->sema), 0);
   
-  // Add thread to be put to sleep to the list. Keeps the list in order.
+  /* Add thread to be put to sleep to the list. Keeps the list in order. */
   list_insert_ordered(&sleeping_threads, &(thread_current()->timer_sleep_elem), thread_sleep_compare, NULL);
   
-  // Put the thread to sleep by decrementing the semaphore. It will be woken up in the interupt handler.
+  /* Put the thread to sleep by decrementing the semaphore. 
+     It will be woken up in the interupt handler. */
   sema_down(&(thread_current()->sema));
 }
 
@@ -187,19 +190,22 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+  
   /* If list is non-empty, check to see if threads are ready to be woken up. */
   while (!list_empty(&sleeping_threads))
   {
-    /* Grab the thread in the front of the list. Will have lowest sleep duration. */
+    /* Grab the thread in the front of the list. 
+       Will have lowest sleep duration. */
     struct thread *front_thread = list_entry(list_front(&sleeping_threads), struct thread, timer_sleep_elem);
     
-    /* When thread is ready to be woken up, wake it up and remove it from the list. */
+    /* When thread is ready to be woken up, 
+       wake it up and remove it from the list.
+       Else no threads are ready. */
     if (front_thread->sleep_duration < ticks)
     {
       sema_up(&(front_thread->sema));
-      list_remove(list_front(&sleeping_threads));
+      list_pop_front(&sleeping_threads);
     }
-    /* Else, no more threads are ready to be woken up (beacuse list is ordered). */
     else
     {
       break;

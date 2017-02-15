@@ -6,9 +6,9 @@ CIS 520 - Programming Project #1
 
 >> Fill in the names and email addresses of your group members.
 
-Matt Hixon mhixon@k-state.edu
-Christian Hughes cjhughes255@k-state.edu
-Katie Kristiansen kkristia@ksu.edu
+Matt Hixon <mhixon@k-state.edu>
+Christian Hughes <cjhughes255@k-state.edu>
+Katie Kristiansen <kkristia@ksu.edu>
 
 ---- PRELIMINARIES ----
 
@@ -18,6 +18,8 @@ Katie Kristiansen kkristia@ksu.edu
 >> Please cite any offline or online sources you consulted while
 >> preparing your submission, other than the Pintos documentation,
 >> course text, lecture notes, and course staff.
+
+https://github.com/Hindol/pintos - Inspiration for portions of list sorting function and interupt handler.
 
 
                  ALARM CLOCK
@@ -30,21 +32,14 @@ Katie Kristiansen kkristia@ksu.edu
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
 /* thread.h */
-struct semaphore sema;
-int64_t sleep_duration;
-
-/* thread.c */
+ADDED TO struct thread:
+  struct semaphore sema; - A semaphore that can be manipulated for putting the thread to sleep & waking it up.
+  int64_t sleep_duration; - How long the thread must sleep, expressed as ticks since the OS Booted Up.
+  struct list_elem timer_sleep_elem; - A list element for maintaining a list of sleeping threads in timer.c.
 
 /* timer.c */
-static struct list sleeping_threads;
-list_init(&sleeping_threads);
-thread_current()->sema = (semaphore*)malloc(sizeof(semaphore));
-thread_current()->sleep_duration = start + ticks;
-sema_init(thread_current()->sema, 0);
-list_insert_ordered(sleeping_threads, thread_current()->elem, thread_sleep_compare, NULL);
-sema_down(thread_current()->sema);
-struct thread front_thread
-
+GLOBAL VARIABLE:
+  static struct list sleeping_threads; - An ordered list to keep track of threads that are asleep.
 
 
 ---- ALGORITHMS ----
@@ -52,8 +47,12 @@ struct thread front_thread
 >> A2: Briefly describe what happens in a call to your timer_sleep(),
 >> including the effects of the timer interrupt handler.
 
+We begin by assigning each thread a sleep duration time, and a semaphore initalized to 0. We then add that thread to a list of sleeping threads, and decrament the its semaphore (which puts the thread to sleep). The interupt handler checks the list of sleeping threads to see if any threads are qualified to wake up (and wakes up all qualifying threads).
+
 >> A3: What steps are taken to minimize the amount of time spent in
 >> the timer interrupt handler?
+
+The list of sleeping threads is kept sorted. The interupt handler will always begin checking the threads at the beginning of the list, which are those with the shortest sleep duration. If a thread is found that is not ready to wake up, the rest of threads are not checked (sleep duration increases throughout the list).
 
 
 ---- SYNCHRONIZATION ----

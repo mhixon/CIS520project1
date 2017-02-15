@@ -582,7 +582,8 @@ allocate_tid (void)
   return tid;
 }
 
-/* A compare function for two threads (that sorts by sleep_duration). To be passed into list_insert_ordered */
+/* A compare function for two threads (that sorts by sleep_duration). 
+   To be passed into list_insert_ordered */
 bool
 thread_sleep_compare (const struct list_elem *left, const struct list_elem *right, void *aux UNUSED)
 {

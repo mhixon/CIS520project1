@@ -3,10 +3,6 @@
 
 IMPORTANT: Update path in ~/.bashrc to run 'pintos' command from this project1 directory
 
-Interesting notes and resources:
+Interesting notes and resources can be found in:
 
-Got stuff from:
-https://github.com/Hindol/pintos
-
-Additional Notes:
-Added struct list_elem timer_sleep_elem to thread struct
+__src/threads/Design1.txt__
