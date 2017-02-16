@@ -245,8 +245,11 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  list_insert_ordered(&ready_list, &t->elem, thread_priority_compare, NULL);
+//  schedule();
+//  list_push_back (&ready_list, &t->elem);
   t->status = THREAD_READY;
+//  schedule();
   intr_set_level (old_level);
 }
 
@@ -316,7 +319,10 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread)
-    list_push_back (&ready_list, &cur->elem);
+  {
+    list_insert_ordered(&ready_list, &cur->elem, thread_priority_compare, NULL);
+    //    list_push_back (&ready_list, &cur->elem);
+  }
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -558,14 +564,31 @@ schedule (void)
   struct thread *cur = running_thread ();
   struct thread *next = next_thread_to_run ();
   struct thread *prev = NULL;
+  
+  bool didYield = false;
 
   ASSERT (intr_get_level () == INTR_OFF);
   ASSERT (cur->status != THREAD_RUNNING);
   ASSERT (is_thread (next));
-
-  if (cur != next)
-    prev = switch_threads (cur, next);
+  
+  if ((cur != next))
+  {
+//    if (cur->priority <= next->priority)
+//    {
+      prev = switch_threads (cur, next);
+// 
+//      prev->status = THREAD_READY;
+//      didYield = true;
+//    }
+//        thread_yield();
+//        prev = switch_threads (cur, next);
+//        didYield = true;
+  }
   thread_schedule_tail  (prev);
+//  if (didYield)
+//  {
+//    printf("I yeilded!");
+//  }
 }
 
 /* Returns a tid to use for a new thread. */
@@ -591,6 +614,17 @@ thread_sleep_compare (const struct list_elem *left, const struct list_elem *righ
   struct thread *right_thread = list_entry(right, struct thread, timer_sleep_elem);
 
   return (left_thread->sleep_duration < right_thread->sleep_duration);
+}
+
+/* A compare function for two threads (that sorts by priority). 
+   To be passed into list_insert_ordered */
+bool
+thread_priority_compare (const struct list_elem *left, const struct list_elem *right, void *aux UNUSED)
+{
+  struct thread *left_thread = list_entry(left, struct thread, elem);
+  struct thread *right_thread = list_entry(right, struct thread, elem);
+
+  return (left_thread->priority > right_thread->priority);
 }
 
 /* Offset of `stack' member within `struct thread'.
