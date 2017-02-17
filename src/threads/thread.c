@@ -357,12 +357,14 @@ void
 thread_set_priority (int new_priority)
 {
   thread_current ()->priority = new_priority;
-  
   /* After the priority of the running thread has been changed,
      check if the thread needs to yield to a higher prioity thread 
      (at the front of the ready_list). */
-  struct thread *next_thread = list_entry(list_front(&ready_list), struct thread, elem);
-  thread_priority_check(next_thread);
+    if (list_size(&ready_list) > 0)
+    {
+      struct thread *next_thread = list_entry(list_front(&ready_list), struct thread, elem);
+      thread_priority_check(next_thread);
+    }
 }
 
 /* Returns the current thread's priority. */
@@ -629,7 +631,7 @@ thread_priority_compare (const struct list_elem *left, const struct list_elem *r
 void
 thread_priority_check (struct thread *t)
 {
-  if((thread_get_priority() <= t->priority) && (t != idle_thread) && (thread_current() != idle_thread))
+  if((thread_get_priority() <= t->priority) && thread_current() != idle_thread && t != idle_thread)
   {
     thread_yield();
   } 
