@@ -77,9 +77,6 @@ The only area that a race condition could occur is in between adding a thread to
 
 We didn't want to create a design that required constantly disabling interrupts -- we wanted to maintain preemption to the greatest extent possible. Our use of per-thread semaphores cleanly manages putting threads to sleep and waking them back up. We also maintain a sorted list to maximize the efficiency of the interrupt handler when determining which (if any) threads to wake-up. We used as many built in data-structures as possible to manage synchronization and thread state.
 
-- In thread yield and thread_unblock add to ready queue in sorted order (highest priority at front)
-- Remove thread_running != assertion in schedule. Check to see cur.pri < next.pri. If so, yeild current and switch to next.
-
 
              PRIORITY SCHEDULING
              ===================
@@ -89,6 +86,8 @@ We didn't want to create a design that required constantly disabling interrupts 
 >> B1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
+
+
 
 >> B2: Explain the data structure used to track priority donation.
 

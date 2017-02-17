@@ -246,11 +246,14 @@ thread_unblock (struct thread *t)
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
   
-  /* */
+  /* Add the thread to the ready list in order of priority,
+     and change status to THREAD_READY. */
   list_insert_ordered(&ready_list, &t->elem, thread_priority_compare, NULL);
   t->status = THREAD_READY;
   
-  // 
+  /* Check to see if the new thread has a higher priority
+     than the currently running thread. If so, yield the
+     current thread, and run the new one. */
   thread_priority_check(t);
   
   intr_set_level (old_level);
@@ -323,6 +326,8 @@ thread_yield (void)
   old_level = intr_disable ();
   if (cur != idle_thread)
   {
+    /* Insert the yielded thread back into the ready list
+       according to its priority. */
     list_insert_ordered(&ready_list, &cur->elem, thread_priority_compare, NULL);
   }
   cur->status = THREAD_READY;
@@ -352,6 +357,10 @@ void
 thread_set_priority (int new_priority)
 {
   thread_current ()->priority = new_priority;
+  
+  /* After the priority of the running thread has been changed,
+     check if the thread needs to yield to a higher prioity thread 
+     (at the front of the ready_list). */
   struct thread *next_thread = list_entry(list_front(&ready_list), struct thread, elem);
   thread_priority_check(next_thread);
 }
@@ -568,17 +577,13 @@ schedule (void)
   struct thread *cur = running_thread ();
   struct thread *next = next_thread_to_run ();
   struct thread *prev = NULL;
-  
-  bool didYield = false;
 
   ASSERT (intr_get_level () == INTR_OFF);
   ASSERT (cur->status != THREAD_RUNNING);
   ASSERT (is_thread (next));
   
   if (cur != next)
-  {
       prev = switch_threads (cur, next);
-  }
   thread_schedule_tail  (prev);
 }
 
@@ -624,7 +629,7 @@ thread_priority_compare (const struct list_elem *left, const struct list_elem *r
 void
 thread_priority_check (struct thread *t)
 {
-  if((thread_current()->priority <= t->priority) && (t != idle_thread && thread_current() != idle_thread))
+  if((thread_get_priority() <= t->priority) && (t != idle_thread) && (thread_current() != idle_thread))
   {
     thread_yield();
   } 
