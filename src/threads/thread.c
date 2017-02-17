@@ -245,15 +245,15 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-
-  t->status = THREAD_READY;
-  list_insert_ordered(&ready_list, &t->elem, thread_priority_compare, NULL);
   
-  if(&(current_thread()->priority) <= &(t->priority))
+  list_insert_ordered(&ready_list, &t->elem, thread_priority_compare, NULL);
+  t->status = THREAD_READY;
+  
+  if((thread_current()->priority <= t->priority) && (thread_current() != idle_thread))
   {
+    printf("I yielded");
     thread_yield();
   } 
-  
 //  schedule();
 //  list_push_back (&ready_list, &t->elem);
 
@@ -328,6 +328,7 @@ thread_yield (void)
   old_level = intr_disable ();
   if (cur != idle_thread)
   {
+
     list_insert_ordered(&ready_list, &cur->elem, thread_priority_compare, NULL);
     //    list_push_back (&ready_list, &cur->elem);
   }
