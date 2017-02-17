@@ -246,18 +246,13 @@ thread_unblock (struct thread *t)
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
   
+  /* */
   list_insert_ordered(&ready_list, &t->elem, thread_priority_compare, NULL);
   t->status = THREAD_READY;
   
-  if((thread_current()->priority <= t->priority) && (thread_current() != idle_thread))
-  {
-    printf("I yielded");
-    thread_yield();
-  } 
-//  schedule();
-//  list_push_back (&ready_list, &t->elem);
-
-//  schedule();
+  // 
+  thread_priority_check(t);
+  
   intr_set_level (old_level);
 }
 
@@ -328,9 +323,7 @@ thread_yield (void)
   old_level = intr_disable ();
   if (cur != idle_thread)
   {
-
     list_insert_ordered(&ready_list, &cur->elem, thread_priority_compare, NULL);
-    //    list_push_back (&ready_list, &cur->elem);
   }
   cur->status = THREAD_READY;
   schedule ();
@@ -359,6 +352,8 @@ void
 thread_set_priority (int new_priority)
 {
   thread_current ()->priority = new_priority;
+  struct thread *next_thread = list_entry(list_front(&ready_list), struct thread, elem);
+  thread_priority_check(next_thread);
 }
 
 /* Returns the current thread's priority. */
@@ -580,24 +575,11 @@ schedule (void)
   ASSERT (cur->status != THREAD_RUNNING);
   ASSERT (is_thread (next));
   
-  if ((cur != next))
+  if (cur != next)
   {
-//    if (cur->priority <= next->priority)
-//    {
       prev = switch_threads (cur, next);
-// 
-//      prev->status = THREAD_READY;
-//      didYield = true;
-//    }
-//        thread_yield();
-//        prev = switch_threads (cur, next);
-//        didYield = true;
   }
   thread_schedule_tail  (prev);
-//  if (didYield)
-//  {
-//    printf("I yeilded!");
-//  }
 }
 
 /* Returns a tid to use for a new thread. */
@@ -634,6 +616,18 @@ thread_priority_compare (const struct list_elem *left, const struct list_elem *r
   struct thread *right_thread = list_entry(right, struct thread, elem);
 
   return (left_thread->priority > right_thread->priority);
+}
+
+/* Check to see if the thread passed in has a higher priority
+   then than the currently running thread. If so, the running thread
+   yields and surrenders control to the higher priority process. */ 
+void
+thread_priority_check (struct thread *t)
+{
+  if((thread_current()->priority <= t->priority) && (t != idle_thread && thread_current() != idle_thread))
+  {
+    thread_yield();
+  } 
 }
 
 /* Offset of `stack' member within `struct thread'.

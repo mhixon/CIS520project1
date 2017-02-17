@@ -142,8 +142,12 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
-/* List compare functions. */
+/* List compare functions. Compares threads based on priority. */
 bool thread_sleep_compare (const struct list_elem *left, const struct list_elem *right, void *aux UNUSED);
 bool thread_priority_compare (const struct list_elem *left, const struct list_elem *right, void *aux UNUSED);
+
+/* Check to see if the thread passed in has a higher priority
+then than the currently running thread. */
+void thread_priority_check (struct thread *t);
 
 #endif /* threads/thread.h */
