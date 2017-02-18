@@ -93,6 +93,7 @@ struct thread
     struct semaphore sema;              /* Stores a semaphore local to the thread. */
     int64_t sleep_duration;             /* Stores how long the thread sleeps (if applicable) */
     struct list_elem timer_sleep_elem;  /* List element for the keeping track of sleeping threads in timer */
+    struct list_elem synch_elem;
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
