@@ -91,7 +91,7 @@ thread_init (void)
 
   lock_init (&tid_lock);
   list_init (&ready_list);
-  list_init (&all_list);
+  list_init (&all_list); 
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
@@ -390,7 +390,14 @@ thread_set_priority (int new_priority)
 int
 thread_get_priority (void)
 {
+  if(!list_empty(&thread_current()->donated_priorities))
+  {
+    int inherited_pri = list_entry(list_front(&thread_current()->donated_priorities), struct thread, pri_elem)->priority;
+    if(thread_current()->priority < inherited_pri)
+      return inherited_pri;
+  }
   return thread_current ()->priority;
+
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -509,6 +516,8 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+  /* Initialize the donated_priorities list. */
+  list_init(&t->donated_priorities);
   list_push_back (&all_list, &t->allelem);
 }
 
@@ -643,7 +652,48 @@ thread_priority_compare (const struct list_elem *left, const struct list_elem *r
   struct thread *left_thread = list_entry(left, struct thread, elem);
   struct thread *right_thread = list_entry(right, struct thread, elem);
 
-  return (left_thread->priority > right_thread->priority);
+  int left_pri_max = left_thread->priority;
+  int right_pri_max = right_thread->priority;
+
+  if(!list_empty(&left_thread->donated_priorities))
+  {
+    int inherited_pri_left = list_entry(list_front(&left_thread->donated_priorities), struct thread, pri_elem)->priority;
+    if(left_pri_max < inherited_pri_left)
+      left_pri_max = inherited_pri_left;
+  }
+  if(!list_empty(&right_thread->donated_priorities))
+  {
+    int inherited_pri_right = list_entry(list_front(&right_thread->donated_priorities), struct thread, pri_elem)->priority;
+    if(right_pri_max < inherited_pri_right)
+      right_pri_max = inherited_pri_right;
+  }
+  return (left_pri_max > right_pri_max);
+}
+
+/* A compare function for two threads (that sorts by priority).
+   To be passed into list_insert_ordered */
+bool
+thread_priority_compare_donated (const struct list_elem *left, const struct list_elem *right, void *aux UNUSED)
+{
+  struct thread *left_thread = list_entry(left, struct thread, pri_elem);
+  struct thread *right_thread = list_entry(right, struct thread, pri_elem);
+
+  int left_pri_max = left_thread->priority;
+  int right_pri_max = right_thread->priority;
+
+  if(!list_empty(&left_thread->donated_priorities))
+  {
+    int inherited_pri_left = list_entry(list_front(&left_thread->donated_priorities), struct thread, pri_elem)->priority;
+    if(left_pri_max < inherited_pri_left)
+      left_pri_max = inherited_pri_left;
+  }
+  if(!list_empty(&right_thread->donated_priorities))
+  {
+    int inherited_pri_right = list_entry(list_front(&right_thread->donated_priorities), struct thread, pri_elem)->priority;
+    if(right_pri_max < inherited_pri_right)
+      right_pri_max = inherited_pri_right;
+  }
+  return (left_pri_max > right_pri_max);
 }
 
 /* Check to see if the thread passed in has a higher priority
@@ -651,8 +701,15 @@ thread_priority_compare (const struct list_elem *left, const struct list_elem *r
    yields and surrenders control to the higher priority process. */
 void
 thread_priority_check (struct thread *t)
-{
-  if((thread_get_priority() < t->priority))
+{ 
+  int max_pri = t->priority;
+  if (!list_empty(&t->donated_priorities))
+  {
+    int inherited_pri = list_entry(list_front(&t->donated_priorities), struct thread, pri_elem)->priority;
+    if (max_pri < inherited_pri)
+      max_pri = inherited_pri;
+  }
+  if(thread_get_priority() < max_pri)
   {
     thread_yield();
   }

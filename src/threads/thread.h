@@ -89,6 +89,8 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
+    struct list donated_priorities;     /* List of priorities that have been donated to this thread. */
+    struct list_elem pri_elem;
     struct list_elem allelem;           /* List element for all threads list. */
     struct semaphore sema;              /* Stores a semaphore local to the thread. */
     int64_t sleep_duration;             /* Stores how long the thread sleeps (if applicable) */
@@ -146,6 +148,7 @@ int thread_get_load_avg (void);
 /* List compare functions. Compares threads based on priority. */
 bool thread_sleep_compare (const struct list_elem *left, const struct list_elem *right, void *aux UNUSED);
 bool thread_priority_compare (const struct list_elem *left, const struct list_elem *right, void *aux UNUSED);
+bool thread_priority_compare_donated (const struct list_elem *left, const struct list_elem *right, void *aux UNUSED);
 
 /* Check to see if the thread passed in has a higher priority
 then than the currently running thread. */

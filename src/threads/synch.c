@@ -69,7 +69,8 @@ sema_down (struct semaphore *sema)
   while (sema->value == 0)
     {
       list_insert_ordered(&sema->waiters, &thread_current()->elem, thread_priority_compare, NULL);
-//      list_push_back (&sema->waiters, &thread_current ()->elem);
+      // yield here
+       
       thread_block ();
     }
   sema->value--;
@@ -218,6 +219,21 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
+
+  int max_pri = lock->holder->priority;
+  if(lock->semaphore.value == 0)
+  {
+    if(!list_empty(&lock->holder->donated_priorities))
+    {
+      int inherited_pri = list_entry(list_front(&lock->holder->donated_priorities), struct thread, pri_elem)->priority;
+      if(inherited_pri > max_pri)
+        max_pri = inherited_pri;
+    }
+    if(thread_get_priority() > max_pri){
+      list_insert_ordered(&lock->holder->donated_priorities, &thread_current()->pri_elem ,thread_priority_compare_donated, NULL);
+    }
+    thread_set_priority(thread_current()->priority);
+  }
   sema_down (&lock->semaphore);
   lock->holder = thread_current ();
 }
@@ -252,6 +268,34 @@ lock_release (struct lock *lock)
 {
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
+  // if (!list_empty(&lock->semaphore.waiters))
+  // {
+  //   struct thread *waiting_thread = list_entry(list_front(&lock->semaphore.waiters), struct thread, elem);
+
+  //     int next_thread_pri = waiting_thread->priority;
+  //     // if (!list_empty(&waiting_thread->donated_priorities))
+  //     // {
+  //     //   int inherited_pri = list_entry(list_front(&lock->holder->donated_priorities), struct thread, pri_elem)->priority;
+
+  //     //   if (inherited_pri > next_thread_pri)
+  //     //     next_thread_pri = inherited_pri;
+  //     // }
+
+  //     if (thread_get_priority() == next_thread_pri) 
+  //     {
+  //       // printf("%d\n", thread_get_priority());
+  //       // int inherited_pri = list_entry(list_front(&lock->holder->donated_priorities), struct thread, pri_elem)->priority;
+  //       // printf("\n\n%d\n\n\n", inherited_pri);
+
+  //     //printf("\n%d\n", list_size(&thread_current()->donated_priorities));
+  //       // list_pop_front(&thread_current()->donated_priorities);
+  //       if (!list_empty(&thread_current()->donated_priorities))
+  //       {
+  //         list_pop_front(&thread_current()->donated_priorities);
+  //       }
+  //     }
+  //   // }
+  // }
 
   lock->holder = NULL;
   sema_up (&lock->semaphore);
