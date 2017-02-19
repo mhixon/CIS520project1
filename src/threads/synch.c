@@ -230,7 +230,7 @@ lock_acquire (struct lock *lock)
         max_pri = inherited_pri;
     }
     if(thread_get_priority() > max_pri){
-      list_insert_ordered(&lock->holder->donated_priorities, &thread_current()->pri_elem ,thread_priority_compare_donated, NULL);
+      list_insert_ordered(&lock->holder->donated_priorities, &thread_current()->pri_elem, thread_priority_compare_donated, NULL);
     }
     thread_set_priority(thread_current()->priority);
   }
@@ -273,13 +273,13 @@ lock_release (struct lock *lock)
     struct thread *waiting_thread = list_entry(list_front(&lock->semaphore.waiters), struct thread, elem);
 
       int next_thread_pri = waiting_thread->priority;
-      if (!list_empty(&waiting_thread->donated_priorities))
-      {
-        int inherited_pri = list_entry(list_front(&lock->holder->donated_priorities), struct thread, pri_elem)->priority;
-
-        // if (inherited_pri > next_thread_pri)
-          next_thread_pri = inherited_pri;
-      }
+      // if (!list_empty(&waiting_thread->donated_priorities))
+      // {
+      //   int inherited_pri = list_entry(list_front(&lock->holder->donated_priorities), struct thread, pri_elem)->priority;
+      //
+      //   // if (inherited_pri > next_thread_pri)
+      //     next_thread_pri = inherited_pri;
+      // }
 
       if (thread_get_priority() == next_thread_pri)
       {

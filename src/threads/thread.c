@@ -394,7 +394,9 @@ thread_get_priority (void)
   {
     int inherited_pri = list_entry(list_front(&thread_current()->donated_priorities), struct thread, pri_elem)->priority;
     if(thread_current()->priority < inherited_pri)
+    {
       return inherited_pri;
+    }
   }
   return thread_current ()->priority;
 
@@ -655,17 +657,21 @@ thread_priority_compare (const struct list_elem *left, const struct list_elem *r
   int left_pri_max = left_thread->priority;
   int right_pri_max = right_thread->priority;
 
+  bool was_donated = false;
+
   if(!list_empty(&left_thread->donated_priorities))
   {
-    int inherited_pri_left = list_entry(list_front(&left_thread->donated_priorities), struct thread, pri_elem)->priority;
-    // if(left_pri_max < inherited_pri_left)
-      left_pri_max = inherited_pri_left;
+    left_pri_max = list_entry(list_front(&left_thread->donated_priorities), struct thread, pri_elem)->priority;
   }
   if(!list_empty(&right_thread->donated_priorities))
   {
-    int inherited_pri_right = list_entry(list_front(&right_thread->donated_priorities), struct thread, pri_elem)->priority;
-    // if(right_pri_max < inherited_pri_right)
-      right_pri_max = inherited_pri_right;
+    right_pri_max = list_entry(list_front(&right_thread->donated_priorities), struct thread, pri_elem)->priority;
+    was_donated = true;
+  }
+
+  if (was_donated)
+  {
+    return (left_pri_max >= right_pri_max);
   }
   return (left_pri_max > right_pri_max);
 }
@@ -684,13 +690,13 @@ thread_priority_compare_donated (const struct list_elem *left, const struct list
   if(!list_empty(&left_thread->donated_priorities))
   {
     int inherited_pri_left = list_entry(list_front(&left_thread->donated_priorities), struct thread, pri_elem)->priority;
-    // if(left_pri_max < inherited_pri_left)
+    if(left_pri_max < inherited_pri_left)
       left_pri_max = inherited_pri_left;
   }
   if(!list_empty(&right_thread->donated_priorities))
   {
     int inherited_pri_right = list_entry(list_front(&right_thread->donated_priorities), struct thread, pri_elem)->priority;
-    // if(right_pri_max < inherited_pri_right)
+    if(right_pri_max < inherited_pri_right)
       right_pri_max = inherited_pri_right;
   }
   return (left_pri_max > right_pri_max);
@@ -706,10 +712,10 @@ thread_priority_check (struct thread *t)
   if (!list_empty(&t->donated_priorities))
   {
     int inherited_pri = list_entry(list_front(&t->donated_priorities), struct thread, pri_elem)->priority;
-    // if (max_pri < inherited_pri)
+    if (max_pri < inherited_pri)
       max_pri = inherited_pri;
   }
-  if(thread_get_priority() < max_pri)
+  if(thread_get_priority() <= max_pri)
   {
     thread_yield();
   }
@@ -717,4 +723,4 @@ thread_priority_check (struct thread *t)
 
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
-uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+uint32_t thread_stack_ofs = offsetof (struct thread, stack); 
