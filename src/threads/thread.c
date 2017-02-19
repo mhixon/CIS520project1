@@ -91,7 +91,7 @@ thread_init (void)
 
   lock_init (&tid_lock);
   list_init (&ready_list);
-  list_init (&all_list); 
+  list_init (&all_list);
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
@@ -375,7 +375,7 @@ thread_set_priority (int new_priority)
     next_thread = list_entry(list_front(&ready_list), struct thread, elem);
     check_priority = true;
   }
-  
+
   intr_set_level (old_level);
 
   /* Now that interrupts are turned on, determine if the current thread
@@ -658,13 +658,13 @@ thread_priority_compare (const struct list_elem *left, const struct list_elem *r
   if(!list_empty(&left_thread->donated_priorities))
   {
     int inherited_pri_left = list_entry(list_front(&left_thread->donated_priorities), struct thread, pri_elem)->priority;
-    if(left_pri_max < inherited_pri_left)
+    // if(left_pri_max < inherited_pri_left)
       left_pri_max = inherited_pri_left;
   }
   if(!list_empty(&right_thread->donated_priorities))
   {
     int inherited_pri_right = list_entry(list_front(&right_thread->donated_priorities), struct thread, pri_elem)->priority;
-    if(right_pri_max < inherited_pri_right)
+    // if(right_pri_max < inherited_pri_right)
       right_pri_max = inherited_pri_right;
   }
   return (left_pri_max > right_pri_max);
@@ -684,13 +684,13 @@ thread_priority_compare_donated (const struct list_elem *left, const struct list
   if(!list_empty(&left_thread->donated_priorities))
   {
     int inherited_pri_left = list_entry(list_front(&left_thread->donated_priorities), struct thread, pri_elem)->priority;
-    if(left_pri_max < inherited_pri_left)
+    // if(left_pri_max < inherited_pri_left)
       left_pri_max = inherited_pri_left;
   }
   if(!list_empty(&right_thread->donated_priorities))
   {
     int inherited_pri_right = list_entry(list_front(&right_thread->donated_priorities), struct thread, pri_elem)->priority;
-    if(right_pri_max < inherited_pri_right)
+    // if(right_pri_max < inherited_pri_right)
       right_pri_max = inherited_pri_right;
   }
   return (left_pri_max > right_pri_max);
@@ -701,12 +701,12 @@ thread_priority_compare_donated (const struct list_elem *left, const struct list
    yields and surrenders control to the higher priority process. */
 void
 thread_priority_check (struct thread *t)
-{ 
+{
   int max_pri = t->priority;
   if (!list_empty(&t->donated_priorities))
   {
     int inherited_pri = list_entry(list_front(&t->donated_priorities), struct thread, pri_elem)->priority;
-    if (max_pri < inherited_pri)
+    // if (max_pri < inherited_pri)
       max_pri = inherited_pri;
   }
   if(thread_get_priority() < max_pri)
