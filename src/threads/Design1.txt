@@ -87,27 +87,60 @@ We didn't want to create a design that required constantly disabling interrupts 
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+/* thread.h */
+struct list donated_priorities;   - List of priorities that have been donated to the thread.
+struct list priority_recipients;  - List of threads that the thread has donated to.
+struct list_elem pri_elem;        - List element for keeping track of donated priorities (in thread form - for donated_priorities).
+struct list_elem recp_elem;       - A list element for keeping track of this thread in a priority_recipients list.
 
 
 >> B2: Explain the data structure used to track priority donation.
 
+We use an ordered linked list to keep track of who the thread has received a
+priority donation from as well as an additional linked list to keep track of who
+the thread has received a priority donation from the thread.
 
 ---- ALGORITHMS ----
 
 >> B3: How do you ensure that the highest priority thread waiting for
 >> a lock, semaphore, or condition variable wakes up first?
 
+When a new thread attempts to acquire a lock, semaphore, or condition variable,
+we do a priority comparison to determine if the new thread has a higher priority
+than the thread currently holding the lock. If it does have a hire priority, the
+current thread is forced to yield and allow the higher priority thread access
+while going back on the ready list to wait for the lock, semaphore, or condition
+variable to become available again.
+
 >> B4: Describe the sequence of events when a call to lock_acquire()
 >> causes a priority donation.  How is nested donation handled?
 
+When a new thread tries to acquire a lock, it first checks to see if the lock is
+being held by another thread. If the lock is unavailable, the new thread will then
+check to see if it has a higher priority than the thread currently holding the lock.
+If it does have a higher priority, the new thread will donate it's priority to the
+thread holding the lock as well as too anyone that the thread is waiting on.
+
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
+
+When a thread tries to release a lock, the thread checks to see if it has received
+a priority donation from any other threads. If it has received a priority donation
+it removes that donation from it's list of priority donations and the higher priority
+thread removes it from it's list of recipients. The thread then releases the lock so
+the highest priority thread can now grab it.
 
 ---- SYNCHRONIZATION ----
 
 >> B6: Describe a potential race in thread_set_priority() and explain
 >> how your implementation avoids it.  Can you use a lock to avoid
 >> this race?
+
+A potential race occurs in thread_set_priority() when a thread would attempt to
+grab it's highest donated priority from the front of the list. A race could occur
+here if it were to receive or lose a priority donation while attempting to access
+the front of the list. To avoid this possible race condition, we disable interrupts
+before accessing the list and turn them back on afterwards.
 
 ---- RATIONALE ----
 
