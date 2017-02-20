@@ -136,14 +136,12 @@ sema_up (struct semaphore *sema)
   }
   sema->value++;
 
-  intr_set_level (old_level);
-
-  /* Now that interrupts are turned on, determine if the current thread
-     should yield to the next_thread. */
-  if (check_priority)
+  /* Yield thread if necessary, turn inerupts back on. */
+  if (check_priority && !intr_context())
   {
     thread_priority_check(next_thread);
   }
+  intr_set_level (old_level);
 }
 
 static void sema_test_helper (void *sema_);

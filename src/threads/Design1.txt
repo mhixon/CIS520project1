@@ -147,6 +147,8 @@ before accessing the list and turn them back on afterwards.
 >> B7: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
 
+We maintained all function asserts, and strove to work within the framework of the existing Pintos source code to the greatest extent possible. All of the lists within our implementation are kept in sorted order based on priority, which keeps us from having to constantly search them for the thread with the highest priority. We do not disable interrupts except for when absolutely necessary. The thread struct stores lists of which threads it has donated priority to, and which threads have donated priority to it. This allows us to quickly assess relevant priority when scheduling around a held lock. We considered adding more fields to the thread struct (in order to store other occasionally used values), but instead elected to store only the most essential values.
+
 
               ADVANCED SCHEDULER [EXTRA CREDIT]
               =================================
