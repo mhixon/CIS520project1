@@ -92,14 +92,13 @@ struct thread
     struct list donated_priorities;     /* List of priorities that have been donated to this thread. */
 
     struct list priority_recipients;    /* List of threads that this thread has donated to. */
+    struct list_elem pri_elem;          /* List element for keeping track of donated priorities (in thread form - for donated_priorities). */
+    struct list_elem recp_elem;         /* A list element for keeping track of this thread in a priority_recipients list. */
 
-    struct list_elem pri_elem;          /* A list element for keeping track of donated priorities (in thread form) */
-    struct list_elem recp_elem;         /* A list element for keeping track of recipients of priority */
     struct list_elem allelem;           /* List element for all threads list. */
     struct semaphore sema;              /* Stores a semaphore local to the thread. */
     int64_t sleep_duration;             /* Stores how long the thread sleeps (if applicable) */
     struct list_elem timer_sleep_elem;  /* List element for the keeping track of sleeping threads in timer */
-    struct list_elem synch_elem;
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -149,9 +148,14 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
-/* List compare functions. Compares threads based on priority. */
+/* List compare function for inserting threads based on sleep time. */
 bool thread_sleep_compare (const struct list_elem *left, const struct list_elem *right, void *aux UNUSED);
+
+/* List compare function for inserting threads into the ready_list based on prioirty. */
 bool thread_priority_compare (const struct list_elem *left, const struct list_elem *right, void *aux UNUSED);
+
+/* List compare function for inserting threads into a threads' donation_list or
+   priority_list based on prioirty. */
 bool thread_priority_compare_donated (const struct list_elem *left, const struct list_elem *right, void *aux UNUSED);
 
 /* Check to see if the thread passed in has a higher priority

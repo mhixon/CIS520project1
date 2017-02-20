@@ -390,6 +390,8 @@ thread_set_priority (int new_priority)
 int
 thread_get_priority (void)
 {
+  /* Return the HIGHER value of the highest thread on the waiting list,
+     and the threads original priority. */
   if(!list_empty(&thread_current()->donated_priorities))
   {
     int inherited_pri = list_entry(list_front(&thread_current()->donated_priorities), struct thread, pri_elem)->priority;
@@ -524,7 +526,7 @@ init_thread (struct thread *t, const char *name, int priority)
 
   /* Initialize the priority_recipients list. */
   list_init(&t->priority_recipients);
-  
+
   list_push_back (&all_list, &t->allelem);
 }
 

@@ -35,17 +35,14 @@ struct condition
   {
     struct list waiters;        /* List of waiting threads. */
   };
-  /* Compares the priority of threads that are waiting on a condition variable. */
+
+/* Compares the priority of threads that are waiting on a condition variable. */
 bool conditional_priority_compare(const struct list_elem *left, const struct list_elem *right, void *aux);
 
 void cond_init (struct condition *);
 void cond_wait (struct condition *, struct lock *);
 void cond_signal (struct condition *, struct lock *);
 void cond_broadcast (struct condition *, struct lock *);
-
-// void nested_removal(struct thread *t, struct list_elem *remove);
-// void nested_donation(struct thread *t);
-
 
 /* Optimization barrier.
 
