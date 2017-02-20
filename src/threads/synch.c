@@ -225,14 +225,35 @@ lock_acquire (struct lock *lock)
   {
     if(!list_empty(&lock->holder->donated_priorities))
     {
-      int inherited_pri = list_entry(list_front(&lock->holder->donated_priorities), struct thread, pri_elem)->priority;
-      // if(inherited_pri > max_pri)
-        max_pri = inherited_pri;
+      max_pri = list_entry(list_front(&lock->holder->donated_priorities), struct thread, pri_elem)->priority;
     }
-    if(thread_get_priority() > max_pri){
-      list_insert_ordered(&lock->holder->donated_priorities, &thread_current()->pri_elem, thread_priority_compare_donated, NULL);
+    if(thread_get_priority() > max_pri)
+    {
+      /* Add the lock holding thread priority the the current threads
+         priority_recipients. */
+      list_insert_ordered(&thread_current()->priority_recipients, &lock->holder->recp_elem, thread_priority_compare_donated, NULL);
+
+      /* Add the current threads priority to the lock holders donated_priorities list */
+      //list_insert_ordered(&lock->holder->donated_priorities, &thread_current()->pri_elem, thread_priority_compare_donated, NULL);
+      //nested_donation(thread_current());
+
+      if(!list_empty(&thread_current()->priority_recipients))
+      {
+        for (struct list_elem *e = list_begin(&thread_current()->priority_recipients); e != list_end(&thread_current()->priority_recipients); e = list_next(e))
+        {
+          struct thread *cur_thread = list_entry (e, struct thread, recp_elem);
+          if(!list_empty(&cur_thread->priority_recipients)) {
+            for (struct list_elem *ee = list_begin(&cur_thread->priority_recipients); ee != list_end(&cur_thread->priority_recipients); ee = list_next(ee))
+            {
+              struct thread *child_thread = list_entry (ee, struct thread, recp_elem);
+              list_insert_ordered(&child_thread->donated_priorities, &thread_current()->pri_elem, thread_priority_compare_donated, NULL);
+            }
+          }
+          list_insert_ordered(&cur_thread->donated_priorities, &thread_current()->pri_elem, thread_priority_compare_donated, NULL);
+        }
+      }
+      thread_set_priority(thread_current()->priority);
     }
-    thread_set_priority(thread_current()->priority);
   }
   sema_down (&lock->semaphore);
   lock->holder = thread_current ();
@@ -270,30 +291,59 @@ lock_release (struct lock *lock)
   ASSERT (lock_held_by_current_thread (lock));
   if (!list_empty(&lock->semaphore.waiters))
   {
-    struct thread *waiting_thread = list_entry(list_front(&lock->semaphore.waiters), struct thread, elem);
-
-      int next_thread_pri = waiting_thread->priority;
-      // if (!list_empty(&waiting_thread->donated_priorities))
-      // {
-      //   int inherited_pri = list_entry(list_front(&lock->holder->donated_priorities), struct thread, pri_elem)->priority;
-      //
-      //   // if (inherited_pri > next_thread_pri)
-      //     next_thread_pri = inherited_pri;
-      // }
-
-      if (thread_get_priority() == next_thread_pri)
+    // struct thread *waiting_thread = list_entry(list_front(&lock->semaphore.waiters), struct thread, elem);
+    //
+    //   int next_thread_pri = waiting_thread->priority;
+    //   if (!list_empty(&waiting_thread->donated_priorities))
+    //   {
+    //     next_thread_pri = list_entry(list_front(&lock->holder->donated_priorities), struct thread, pri_elem)->priority;
+    //   }
+    //
+    //   if (thread_get_priority() == next_thread_pri)
+    //   {
+    //     // printf("%d\n", thread_get_priority());
+    //     // int inherited_pri = list_entry(list_front(&lock->holder->donated_priorities), struct thread, pri_elem)->priority;
+    //     // printf("\n\n%d\n\n\n", inherited_pri);
+    // //
+    //   //printf("\n%d\n", list_size(&thread_current()->donated_priorities));
+    //     // list_pop_front(&thread_current()->donated_priorities);
+    //     if (!list_empty(&thread_current()->donated_priorities))
+    //     {
+    //       // list_pop_front(&thread_current()->donated_priorities);
+    //       //nested_removal(thread_current(), &waiting_thread->recp_elem);
+    //
+    //     }
+    //   }
+    for (struct list_elem *e = list_begin(&lock->semaphore.waiters); e != list_end(&lock->semaphore.waiters); e = list_next(e))
+    {
+      // puts("Love you Chrisitan.");
+      // printf("%d\n\n\n", list_size(&lock->semaphore.waiters));
+      struct thread *parent_thread = list_entry (e, struct thread, elem);
+      if(!list_empty(&thread_current()->donated_priorities))
       {
-        // printf("%d\n", thread_get_priority());
-        // int inherited_pri = list_entry(list_front(&lock->holder->donated_priorities), struct thread, pri_elem)->priority;
-        // printf("\n\n%d\n\n\n", inherited_pri);
-
-      //printf("\n%d\n", list_size(&thread_current()->donated_priorities));
-        // list_pop_front(&thread_current()->donated_priorities);
-        if (!list_empty(&thread_current()->donated_priorities))
+        for (struct list_elem *ee = list_begin(&thread_current()->donated_priorities); ee != list_end(&thread_current()->donated_priorities); ee = list_next(ee))
         {
-          list_pop_front(&thread_current()->donated_priorities);
+          if (&parent_thread->pri_elem == ee)
+          {
+            // puts("I love computerasdasdasdasds.\n\n\n");
+            list_remove(ee);
+            break;
+          }
         }
       }
+      // if(!list_empty(&parent_thread->priority_recipients))
+      // {
+      //   for (struct list_elem *ee = list_begin(&parent_thread->priority_recipients); ee != list_end(&parent_thread->priority_recipients); ee = list_next(ee))
+      //   {
+      //     if (&thread_current()->recp_elem == ee)
+      //     {
+      //       puts("I love computerasdasdasdasds.\n\n\n");
+      //       list_remove(ee);
+      //       break;
+      //     }
+      //   }
+      // }
+    }
     // }
   }
 
@@ -415,3 +465,27 @@ conditional_priority_compare(const struct list_elem *left, const struct list_ele
   /* Returns a boolean based on the highest priority thread present in the semaphore's waiting list. */
   return (thread_priority_compare(list_front(&left_sema->semaphore.waiters),list_front(&right_sema->semaphore.waiters), NULL));
 }
+
+// void nested_donation(struct thread *t) {
+//   if(list_empty(&t->priority_recipients)) {
+//     return;
+//   } else {
+//     for (struct list_elem *e = list_begin(&t->priority_recipients); e != list_end(&t->priority_recipients); e = list_next(e)) {
+//       struct thread *child_thread = list_entry (e, struct thread, recp_elem);
+//       list_insert_ordered(&child_thread->donated_priorities, &t->pri_elem, thread_priority_compare_donated, NULL);
+//       nested_donation(child_thread);
+//     }
+//   }
+// }
+//
+// void nested_removal(struct thread *t, struct list_elem *remove) {
+//   if(list_empty(&t->priority_recipients)) {
+//     return;
+//   } else {
+//     for (struct list_elem *e = list_begin(&t->priority_recipients); e != list_end(&t->priority_recipients); e = list_next(e)) {
+//       struct thread *child_thread = list_entry (e, struct thread, recp_elem);
+//       list_remove(child_thread->donated_priorities);
+//       nested_removal(child_thread, remove);
+//     }
+//   }
+// }

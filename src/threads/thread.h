@@ -90,7 +90,11 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
     struct list donated_priorities;     /* List of priorities that have been donated to this thread. */
-    struct list_elem pri_elem;
+
+    struct list priority_recipients;    /* List of threads that this thread has donated to. */
+
+    struct list_elem pri_elem;          /* A list element for keeping track of donated priorities (in thread form) */
+    struct list_elem recp_elem;         /* A list element for keeping track of recipients of priority */
     struct list_elem allelem;           /* List element for all threads list. */
     struct semaphore sema;              /* Stores a semaphore local to the thread. */
     int64_t sleep_duration;             /* Stores how long the thread sleeps (if applicable) */

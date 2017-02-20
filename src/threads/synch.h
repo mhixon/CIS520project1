@@ -43,6 +43,9 @@ void cond_wait (struct condition *, struct lock *);
 void cond_signal (struct condition *, struct lock *);
 void cond_broadcast (struct condition *, struct lock *);
 
+// void nested_removal(struct thread *t, struct list_elem *remove);
+// void nested_donation(struct thread *t);
+
 
 /* Optimization barrier.
 

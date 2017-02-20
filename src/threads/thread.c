@@ -518,8 +518,13 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+
   /* Initialize the donated_priorities list. */
   list_init(&t->donated_priorities);
+
+  /* Initialize the priority_recipients list. */
+  list_init(&t->priority_recipients);
+  
   list_push_back (&all_list, &t->allelem);
 }
 
